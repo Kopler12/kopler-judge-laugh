@@ -16,15 +16,38 @@ OUTPUT_PATH = "/output/entry.txt"
 MAX_CHARS = 200
 
 
-def main() -> None:
-    text = ENTRY.strip()
-    if not text:
+def validate_entry(text: str) -> str:
+    """Normalize and validate a one-line confession entry.
+
+    Strips surrounding whitespace, then rejects empty text, embedded
+    newlines, control characters, and anything over MAX_CHARS. Returns
+    the cleaned text unchanged otherwise.
+    """
+    cleaned = text.strip()
+    if not cleaned:
         raise SystemExit("entry is empty")
-    if "\n" in text or "\r" in text:
+    if "\n" in cleaned or "\r" in cleaned:
         raise SystemExit("entry must be a single line")
-    if len(text) > MAX_CHARS:
-        raise SystemExit(f"entry is {len(text)} chars, over the {MAX_CHARS} limit")
-    os.makedirs(os.path.dirname(OUTPUT_PATH), exist_ok=True)
+    if any(ord(ch) < 32 for ch in cleaned):
+        raise SystemExit("entry contains a control character")
+    if len(cleaned) > MAX_CHARS:
+        raise SystemExit(
+            f"entry is {len(cleaned)} chars, over the {MAX_CHARS} limit"
+        )
+    return cleaned
+
+
+def main() -> None:
+    """Validate the confession and write it to OUTPUT_PATH.
+
+    Creates the output directory if needed and writes the entry as a
+    single line with a trailing newline, so the judge reads exactly
+    one confession.
+    """
+    text = validate_entry(ENTRY)
+    out_dir = os.path.dirname(OUTPUT_PATH)
+    if out_dir:
+        os.makedirs(out_dir, exist_ok=True)
     with open(OUTPUT_PATH, "w", encoding="utf-8") as f:
         f.write(text + "\n")
 
